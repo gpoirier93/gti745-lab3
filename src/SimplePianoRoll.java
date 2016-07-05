@@ -23,9 +23,11 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JRadioButton;
+import javax.swing.JTextField;
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+
 import javax.swing.ButtonGroup;
 import javax.swing.BoxLayout;
 import javax.swing.Box;
@@ -214,9 +216,11 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 	Score score = new Score();
 
 	Thread thread = null;
+	TempoThread tempoThread = null;
 	boolean threadSuspended;
 
 	int currentBeat = 0;
+	int currentSleepTimeMS = 150;
 
 	public static final int RADIAL_MENU_PLAY = 0;
 	public static final int RADIAL_MENU_STOP = 1;
@@ -402,6 +406,7 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void mouseReleased( MouseEvent e ) {
 		old_mouse_x = mouse_x;
 		old_mouse_y = mouse_y;
@@ -437,6 +442,9 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 				return;
 		}
 		if ( controlMenu.isVisible() ) {
+			if (tempoThread != null && tempoThread.isAlive()) {
+				stopTempoThread();
+			}
 			int returnValue = controlMenu.releaseEvent( mouse_x, mouse_y );
 
 			if ( returnValue == CustomWidget.S_REDRAW )
@@ -542,6 +550,18 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 				case CONTROL_MENU_ZOOM:
 					gw.zoomIn( (float)Math.pow( Constant.zoomFactorPerPixelDragged, delta_x-delta_y ) );
 					break;
+				case CONTROL_MENU_TEMPO:
+					if ((delta_y < 0 && currentSleepTimeMS-delta_y > 10)
+					  || (delta_y > 0 && currentSleepTimeMS+delta_y < 1000)) {
+						currentSleepTimeMS += delta_y;
+						simplePianoRoll.tempoLabel.setText("Tempo : "+currentSleepTimeMS+ " ms/note");
+					} 
+					if(tempoThread == null || !tempoThread.isAlive()) {
+						startTempoThread();
+					} else {
+						updateTempoThread(currentSleepTimeMS);
+					}
+					break;
 				default:
 					// TODO XXX
 					break;
@@ -570,12 +590,27 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 			}
 		}
 	}
+	
 	public void stopBackgroundWork() {
 		threadSuspended = true;
 	}
+	
+	public void startTempoThread() {
+		tempoThread = new TempoThread();
+		tempoThread.currentSleepTimeMS = this.currentSleepTimeMS;
+		tempoThread.start();
+	}
+	
+	public void stopTempoThread() {
+		tempoThread.stop();
+	}
+	
+	public void updateTempoThread(int tempo) {
+		tempoThread.currentSleepTimeMS = tempo;
+	}
+	
 	public void run() {
 		try {
-			int sleepIntervalInMilliseconds = 150;
 			while (true) {
 
 				// Here's where the thread does some work
@@ -606,7 +641,7 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 						}
 					}
 				}
-				thread.sleep( sleepIntervalInMilliseconds );  // interval given in milliseconds
+				thread.sleep( currentSleepTimeMS );  // interval given in milliseconds
 			}
 		}
 		catch (InterruptedException e) { }
@@ -633,6 +668,7 @@ public class SimplePianoRoll implements ActionListener {
 	JCheckBoxMenuItem autoFrameMenuItem;
 	JMenuItem aboutMenuItem;
 
+	JLabel tempoLabel;
 	JCheckBox playCheckBox;
 	JCheckBox loopWhenPlayingCheckBox;
 
@@ -841,6 +877,10 @@ public class SimplePianoRoll implements ActionListener {
 		pane.setLayout( new BoxLayout( pane, BoxLayout.X_AXIS ) );
 		pane.add( toolPanel );
 		pane.add( canvas );
+		
+		tempoLabel = new JLabel("Tempo : " + canvas.currentSleepTimeMS+ " ms/note");
+		tempoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+		toolPanel.add(tempoLabel);
 
 		playCheckBox = new JCheckBox("Play", isMusicPlaying );
 		playCheckBox.setAlignmentX( Component.LEFT_ALIGNMENT );
