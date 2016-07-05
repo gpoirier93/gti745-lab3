@@ -11,6 +11,7 @@ import java.awt.Dimension;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.io.File;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
@@ -22,6 +23,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JFileChooser;
 import javax.swing.JRadioButton;
 import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
@@ -624,8 +626,15 @@ public class SimplePianoRoll implements ActionListener {
 
 	Synthesizer synthesizer;
 	MidiChannel [] midiChannels;
+	
+	Serializer serializer;
+	Deserializer deserializer;
+	
+	JFileChooser fileChooser;
 
 	JMenuItem clearMenuItem;
+	JMenuItem openMenuItem;
+	JMenuItem saveMenuItem;
 	JMenuItem quitMenuItem;
 	JCheckBoxMenuItem showToolsMenuItem;
 	JCheckBoxMenuItem highlightMajorScaleMenuItem;
@@ -691,6 +700,30 @@ public class SimplePianoRoll implements ActionListener {
 		Object source = e.getSource();
 		if ( source == clearMenuItem ) {
 			canvas.clear();
+		}
+		else if ( source == openMenuItem ) {
+			int returnVal = fileChooser.showOpenDialog(frame);
+			
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				File file = fileChooser.getSelectedFile();
+				System.out.println("Opening: " + file.getName() + ".");
+				Address address = deserializer.deserialzeAddress(file.getAbsolutePath());
+				System.out.println(address);
+			 } else {
+				System.out.println("Open command cancelled by user.");
+			 }
+			
+		}
+		else if ( source == saveMenuItem ) {
+			int returnVal = fileChooser.showSaveDialog(frame);
+			
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				File file = fileChooser.getSelectedFile();
+				serializer.serializeAddress(file.getAbsolutePath());
+				System.out.println("Saving: " + file.getName() + ".");
+			} else {
+				System.out.println("Save command cancelled by user.");
+			}
 		}
 		else if ( source == quitMenuItem ) {
 			int response = JOptionPane.showConfirmDialog(
@@ -790,6 +823,11 @@ public class SimplePianoRoll implements ActionListener {
 
 		frame = new JFrame( applicationName );
 		frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		
+		fileChooser = new JFileChooser();
+		
+		serializer = new Serializer();
+		deserializer = new Deserializer();
 
 		JMenuBar menuBar = new JMenuBar();
 			JMenu menu = new JMenu("File");
@@ -797,6 +835,18 @@ public class SimplePianoRoll implements ActionListener {
 				clearMenuItem.addActionListener(this);
 				menu.add(clearMenuItem);
 
+				menu.addSeparator();
+				
+				openMenuItem = new JMenuItem("Open");
+				openMenuItem.addActionListener(this);
+				menu.add(openMenuItem);
+				
+				menu.addSeparator();
+				
+				saveMenuItem = new JMenuItem("Save");
+				saveMenuItem.addActionListener(this);
+				menu.add(saveMenuItem);
+				
 				menu.addSeparator();
 
 				quitMenuItem = new JMenuItem("Quit");
