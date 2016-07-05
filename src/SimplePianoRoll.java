@@ -707,8 +707,9 @@ public class SimplePianoRoll implements ActionListener {
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				File file = fileChooser.getSelectedFile();
 				System.out.println("Opening: " + file.getName() + ".");
-				Address address = deserializer.deserialzeAddress(file.getAbsolutePath());
-				System.out.println(address);
+				Score score = deserializer.deserialzeAddress(file.getAbsolutePath());
+				canvas.score = score;
+				System.out.println(score);
 			 } else {
 				System.out.println("Open command cancelled by user.");
 			 }
@@ -719,7 +720,7 @@ public class SimplePianoRoll implements ActionListener {
 			
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				File file = fileChooser.getSelectedFile();
-				serializer.serializeAddress(file.getAbsolutePath());
+				serializer.serialize(file.getAbsolutePath(), canvas.score);
 				System.out.println("Saving: " + file.getName() + ".");
 			} else {
 				System.out.println("Save command cancelled by user.");
