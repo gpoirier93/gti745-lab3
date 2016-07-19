@@ -564,6 +564,13 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 						updateTempoThread(currentSleepTimeMS);
 					}
 					break;
+				case CONTROL_MENU_TOTAL_DURATION:
+					if ((delta_x < 0 && score.numBeats-delta_x > 16) || (delta_x > 0 && score.numBeats+delta_x < 128 )) {
+						score.numBeats += delta_x;
+						gw.frame(score.getBoundingRectangle(), false);
+						repaint();
+					}
+					break;
 				default:
 					// TODO XXX
 					break;
