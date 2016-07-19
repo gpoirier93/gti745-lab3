@@ -1,6 +1,6 @@
 
 import java.util.ArrayList;
-
+import java.util.Random;
 import java.awt.Container;
 import java.awt.Component;
 import java.awt.Graphics;
@@ -31,6 +31,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.BoxLayout;
 import javax.swing.Box;
 import javax.swing.BorderFactory;
@@ -134,6 +135,10 @@ class Score {
 		if ( 0 <= indexOfPitch && indexOfPitch < numPitches )
 			return indexOfPitch + midiNoteNumberOfLowestPitch;
 		return -1;
+	}
+	
+	public int getPitchClassOfMidiNoteNumber(int midiNoteNumber) {
+		return midiNoteNumber % 12;
 	}
 
 	// returns -1 if out of bounds
@@ -367,7 +372,9 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 
 		if ( beatOfMouseCursor >= 0 && midiNoteNumberOfMouseCurser >= 0 ) {
 			if ( simplePianoRoll.dragMode == SimplePianoRoll.DM_DRAW_NOTES ) {
-				if ( score.grid[beatOfMouseCursor][midiNoteNumberOfMouseCurser-score.midiNoteNumberOfLowestPitch] != true ) {
+				if ( score.grid[beatOfMouseCursor][midiNoteNumberOfMouseCurser-score.midiNoteNumberOfLowestPitch] != true 
+					&& (!simplePianoRoll.isLimitedToGivenScale 
+			 || (simplePianoRoll.isLimitedToGivenScale && isPitchInGivenScale(midiNoteNumberOfMouseCurser-score.midiNoteNumberOfLowestPitch)))) {
 					score.grid[beatOfMouseCursor][midiNoteNumberOfMouseCurser-score.midiNoteNumberOfLowestPitch] = true;
 					repaint();
 				}
@@ -458,7 +465,10 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 
 	private void playNote( int midiNoteNumber ) {
 		if ( Constant.USE_SOUND && midiNoteNumber >= 0 ) {
-			simplePianoRoll.midiChannels[0].noteOn(midiNoteNumber,Constant.midiVolume);
+			if (!simplePianoRoll.isLimitedToGivenScale 
+			 || (simplePianoRoll.isLimitedToGivenScale && isPitchInGivenScale(midiNoteNumber))) {
+				simplePianoRoll.midiChannels[0].noteOn(midiNoteNumber,Constant.midiVolume);
+			}
 		}
 	}
 	private void stopPlayingNote( int midiNoteNumber ) {
@@ -611,6 +621,62 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 		tempoThread.currentSleepTimeMS = tempo;
 	}
 	
+	public boolean isPitchInGivenScale(int midiNoteNumber) {
+		int pitchClass = score.getPitchClassOfMidiNoteNumber(midiNoteNumber);
+		boolean isInGivenScale = false;
+		switch (pitchClass) {
+			case 0:
+				isInGivenScale = false;
+				break;
+			case 1:
+				isInGivenScale = true;
+				break;
+			case 2:
+				isInGivenScale = false;
+				break;
+			case 3:
+				isInGivenScale = true;
+				break;
+			case 4:
+				isInGivenScale = false;
+				break;
+			case 5:
+				isInGivenScale = false;
+				break;
+			case 6:
+				isInGivenScale = true;
+				break;
+			case 7:
+				isInGivenScale = false;
+				break;
+			case 8:
+				isInGivenScale = true;
+				break;
+			case 9:
+				isInGivenScale = false;
+				break;
+			case 10:
+				isInGivenScale = true;
+				break;
+			case 11:
+				isInGivenScale = false;
+				break;
+		}
+		return isInGivenScale;
+	}
+	
+	public void createRandomPiece() {
+		Random rand = new Random();
+		for(int i = 0; i< score.numBeats; i++) {
+			int randomPitch = rand.nextInt(score.numPitches);
+			while(!(isPitchInGivenScale(randomPitch) && randomPitch < 52 && randomPitch > 40)) {
+				randomPitch = rand.nextInt(score.numPitches);
+			}
+			
+			score.grid[i][randomPitch] = true;
+		}
+	}
+	
 	public void run() {
 		try {
 			while (true) {
@@ -680,7 +746,9 @@ public class SimplePianoRoll implements ActionListener {
 	JLabel tempoLabel;
 	JCheckBox playCheckBox;
 	JCheckBox loopWhenPlayingCheckBox;
-
+	JCheckBox limitToGivenScaleCheckbox;
+	JButton randomPieceButton;
+	
 	JRadioButton drawNotesRadioButton;
 	JRadioButton eraseNotesRadioButton;
 
@@ -692,6 +760,7 @@ public class SimplePianoRoll implements ActionListener {
 	public boolean isMusicLoopedWhenPlayed = false;
 	public boolean highlightMajorScale = true;
 	public boolean isAutoFrameActive = true;
+	public boolean isLimitedToGivenScale = false;
 
 	// The DM_ prefix is for Drag Mode
 	public static final int DM_DRAW_NOTES = 0;
@@ -833,6 +902,11 @@ public class SimplePianoRoll implements ActionListener {
 		}
 		else if ( source == playNoteUponRolloverIfSpecialKeyHeldDownRadioButton ) {
 			rolloverMode = RM_PLAY_NOTE_UPON_ROLLOVER_IF_SPECIAL_KEY_HELD_DOWN;
+		} else if (source == limitToGivenScaleCheckbox) {
+			isLimitedToGivenScale = limitToGivenScaleCheckbox.isSelected();
+		} else if (source == randomPieceButton) {
+			canvas.clear();
+			canvas.createRandomPiece();
 		}
 	}
 
@@ -942,6 +1016,16 @@ public class SimplePianoRoll implements ActionListener {
 		loopWhenPlayingCheckBox.setAlignmentX( Component.LEFT_ALIGNMENT );
 		loopWhenPlayingCheckBox.addActionListener(this);
 		toolPanel.add( loopWhenPlayingCheckBox );
+		
+		limitToGivenScaleCheckbox = new JCheckBox("Limit to given scale", isLimitedToGivenScale );
+		limitToGivenScaleCheckbox.setAlignmentX( Component.LEFT_ALIGNMENT );
+		limitToGivenScaleCheckbox.addActionListener(this);
+		toolPanel.add( limitToGivenScaleCheckbox );
+		
+		randomPieceButton = new JButton("Create random piece");
+		randomPieceButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+		randomPieceButton.addActionListener(this);
+		toolPanel.add(randomPieceButton);
 
 		toolPanel.add( Box.createRigidArea(new Dimension(1,20)) );
 		toolPanel.add( new JLabel("During dragging:") );
