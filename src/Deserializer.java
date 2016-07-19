@@ -1,6 +1,5 @@
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
-
 import javax.swing.JFileChooser;
 
 public class Deserializer {
@@ -27,6 +26,7 @@ public class Deserializer {
 			score.numPitches = song.numPitches;
 			score.pitchClassesInMajorScale = song.pitchClassesInMajorScale;
 			score.pitchClassesToEmphasizeInMajorScale = song.pitchClassesToEmphasizeInMajorScale;
+			score.currentSleepTimeMS = song.sleepTimeInMS;
 			
 			return score;   
 		}catch(Exception ex){

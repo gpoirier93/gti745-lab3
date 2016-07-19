@@ -76,6 +76,7 @@ class Score {
 	public static final int midiNoteNumberOfLowestPitch = 21;
 	public int numBeats = 128;
 	public boolean [][] grid;
+	public int currentSleepTimeMS = 150;
 
 	public static final int numPitchesInOctave = 12;
 	public String [] namesOfPitchClasses;
@@ -227,7 +228,6 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 	boolean threadSuspended;
 
 	int currentBeat = 0;
-	int currentSleepTimeMS = 150;
 
 	public static final int RADIAL_MENU_PLAY = 0;
 	public static final int RADIAL_MENU_STOP = 1;
@@ -563,15 +563,15 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 					gw.zoomIn( (float)Math.pow( Constant.zoomFactorPerPixelDragged, delta_x-delta_y ) );
 					break;
 				case CONTROL_MENU_TEMPO:
-					if ((delta_y < 0 && currentSleepTimeMS-delta_y > 10)
-					  || (delta_y > 0 && currentSleepTimeMS+delta_y < 1000)) {
-						currentSleepTimeMS += delta_y;
-						simplePianoRoll.tempoLabel.setText("Tempo : "+currentSleepTimeMS+ " ms/note");
+					if ((delta_y < 0 && score.currentSleepTimeMS-delta_y > 10)
+					  || (delta_y > 0 && score.currentSleepTimeMS+delta_y < 1000)) {
+						score.currentSleepTimeMS += delta_y;
+						simplePianoRoll.tempoLabel.setText("Tempo : "+score.currentSleepTimeMS+ " ms/note");
 					} 
 					if(tempoThread == null || !tempoThread.isAlive()) {
 						startTempoThread();
 					} else {
-						updateTempoThread(currentSleepTimeMS);
+						updateTempoThread(score.currentSleepTimeMS);
 					}
 					break;
 				case CONTROL_MENU_TOTAL_DURATION:
@@ -618,7 +618,7 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 	
 	public void startTempoThread() {
 		tempoThread = new TempoThread();
-		tempoThread.currentSleepTimeMS = this.currentSleepTimeMS;
+		tempoThread.currentSleepTimeMS = score.currentSleepTimeMS;
 		tempoThread.start();
 	}
 	
@@ -718,7 +718,7 @@ class MyCanvas extends JPanel implements KeyListener, MouseListener, MouseMotion
 						}
 					}
 				}
-				thread.sleep( currentSleepTimeMS );  // interval given in milliseconds
+				thread.sleep( score.currentSleepTimeMS );  // interval given in milliseconds
 			}
 		}
 		catch (InterruptedException e) { }
@@ -823,6 +823,7 @@ public class SimplePianoRoll implements ActionListener {
 				System.out.println("Opening: " + file.getName() + ".");
 				Score score = deserializer.deserialzeAddress(file.getAbsolutePath());
 				canvas.score = score;
+				tempoLabel.setText("Tempo : "+score.currentSleepTimeMS+ " ms/note");
 				System.out.println(score);
 			 } else {
 				System.out.println("Open command cancelled by user.");
@@ -1012,7 +1013,7 @@ public class SimplePianoRoll implements ActionListener {
 		pane.add( toolPanel );
 		pane.add( canvas );
 		
-		tempoLabel = new JLabel("Tempo : " + canvas.currentSleepTimeMS+ " ms/note");
+		tempoLabel = new JLabel("Tempo : " + canvas.score.currentSleepTimeMS+ " ms/note");
 		tempoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		toolPanel.add(tempoLabel);
 

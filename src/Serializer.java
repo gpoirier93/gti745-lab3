@@ -11,6 +11,7 @@ public class Serializer {
 		song.numPitches = score.numPitches;
 		song.pitchClassesInMajorScale = score.pitchClassesInMajorScale;
 		song.pitchClassesToEmphasizeInMajorScale = score.pitchClassesToEmphasizeInMajorScale;
+		song.sleepTimeInMS = score.currentSleepTimeMS;
 		
 		try{
 			FileOutputStream fout = new FileOutputStream(location);

@@ -6,7 +6,8 @@ public class Song implements Serializable {
 	public int numPitches = 88;
 	public int numBeats = 128;
 	public boolean [][] grid;
-
+	public int sleepTimeInMS;
+	
 	public String [] namesOfPitchClasses;
 	public boolean [] pitchClassesInMajorScale;
 	public boolean [] pitchClassesToEmphasizeInMajorScale;
